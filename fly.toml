@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for wilian-bot-cpnrhq on 2026-06-16T04:50:46Z
+# fly.toml app configuration file generated for saitamabot-zvq0va on 2026-06-16T19:49:24Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'wilian-bot-cpnrhq'
-primary_region = 'iad'
+app = 'saitamabot-zvq0va'
+primary_region = 'ams'
 
 [build]
 
