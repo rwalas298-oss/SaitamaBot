@@ -41,7 +41,6 @@ COPY --from=build /app /app
 
 # Setup sqlite3 on a separate volume
 RUN mkdir -p /data
-VOLUME /data
 
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 3000
