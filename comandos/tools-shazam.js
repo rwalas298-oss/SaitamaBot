@@ -1,129 +1,132 @@
 import axios from 'axios'
-import { 
-    makeWASocket, 
-    useMultiFileAuthState, 
-    fetchLatestBaileysVersion, 
-    makeCacheableSignalKeyStore, 
-    DisconnectReason,
-    Browsers,
-    downloadMediaMessage
-} from 'todleys';
+import fs from 'fs'
+import FormData from 'form-data'
 
-const shazam = {
+export default {
     name: 'shazam',
-    alias: ['song', 'music', 'identify'],
-    category: 'herramientas',
-    noPrefix: true,
+    alias: ['song', 'whatmusic', 'music'],
+    category: 'tools',
+    desc: 'Reconoce canciones de audios o videos.',
 
     run: async (conn, m) => {
-
-        const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage
-
-        const media =
-            quoted?.audioMessage ||
-            quoted?.videoMessage
-
-        if (!media) {
-            return m.reply('🎧 Responde a un video o audio con .shazam')
-        }
-
-        await conn.sendMessage(m.chat, {
-            react: { text: '🔎', key: m.key }
-        })
-
         try {
 
-            // 💣 FIX REAL TODLEYS
-            const type = media.audioMessage ? 'audio' : 'video'
+            const q = m.quoted || m
 
-            const stream = await downloadContentFromMessage(media, type)
-
-            let buffer = Buffer.from([])
-            for await (const chunk of stream) {
-                buffer = Buffer.concat([buffer, chunk])
+            if (!q.message) {
+                return m.reply(
+                    `*${config.visuals.emoji2}* Responde a un audio o video.`
+                )
             }
 
-            // =========================
-            // 🥇 ACRCLOUD
-            // =========================
-            const form = new FormData()
+            const mime =
+                q.msg?.mimetype ||
+                q.message?.audioMessage?.mimetype ||
+                q.message?.videoMessage?.mimetype ||
+                ''
 
-            form.append('file', buffer, {
-                filename: 'audio.mp3'
+            if (!/audio|video/.test(mime)) {
+                return m.reply(
+                    `*${config.visuals.emoji2}* Responde a un audio o video.`
+                )
+            }
+
+            await conn.sendMessage(m.chat, {
+                react: {
+                    text: '🎵',
+                    key: m.key
+                }
             })
 
-            form.append('access_key', 'TU_ACR_KEY')
-            form.append('access_secret', 'TU_ACR_SECRET')
-            form.append('data_type', 'audio')
-            form.append('signature_version', '1')
+            const media = await q.download()
 
-            let music = null
+            const form = new FormData()
 
-            try {
-                const res = await axios.post(
-                    'https://identify-eu-west-1.acrcloud.com/v1/identify',
-                    form,
-                    { headers: form.getHeaders(), timeout: 15000 }
-                )
+            form.append(
+                'file',
+                Buffer.from(media),
+                'audio.mp3'
+            )
 
-                music = res.data?.metadata?.music?.[0]
+            form.append(
+                'api_token',
+                '9eb6d988ec1bf3ce2463405dff7a1fdd'
+            )
 
-            } catch (e) {
-                music = null
-            }
+            form.append(
+                'return',
+                'spotify,apple_music'
+            )
 
-            // =========================
-            // 🥈 FALLBACK
-            // =========================
-            if (!music) {
-                try {
-                    const audd = await axios.post('https://api.audd.io/', {
-                        api_token: 'TU_AUDD_TOKEN',
-                        return: 'spotify,apple_music'
-                    }, { timeout: 15000 })
-
-                    music = audd.data?.result
-
-                } catch (e) {
-                    music = null
+            const { data } = await axios.post(
+                'https://api.audd.io/',
+                form,
+                {
+                    headers: form.getHeaders(),
+                    maxBodyLength: Infinity
                 }
+            )
+
+            if (!data?.result) {
+                return m.reply(
+                    '❌ No pude reconocer la canción.'
+                )
             }
 
-            if (!music) {
-                return m.reply('❌ No se pudo identificar la canción')
+            const song = data.result
+
+            let txt =
+`🎵 *Canción encontrada*
+
+📌 Título:
+> ${song.title || '-'}
+
+👤 Artista:
+> ${song.artist || '-'}
+
+💿 Álbum:
+> ${song.album || '-'}
+
+📅 Lanzamiento:
+> ${song.release_date || '-'}`
+
+            if (song.spotify?.external_urls?.spotify) {
+                txt += `
+
+🎧 Spotify:
+> ${song.spotify.external_urls.spotify}`
             }
 
-            const title = music.title || music.name
-            const artist = music.artists?.[0]?.name || music.artist
-            const album = music.album?.name || music.album
+            if (song.apple_music?.url) {
+                txt += `
+
+🍎 Apple Music:
+> ${song.apple_music.url}`
+            }
+
+            await m.reply(txt)
 
             await conn.sendMessage(m.chat, {
-                image: { url: music.album?.cover || '' },
-                caption:
-`🎵 *SHAZAM TODLEYS ULTRA PRO*
-
-🎶 Canción: ${title}
-👤 Artista: ${artist}
-💿 Álbum: ${album}
-
-⚡ Sistema estable Todleys`
-            }, { quoted: m })
-
-            await conn.sendMessage(m.chat, {
-                react: { text: '✅', key: m.key }
+                react: {
+                    text: '✅',
+                    key: m.key
+                }
             })
 
         } catch (e) {
 
-            console.log(e)
+            console.error(e)
 
             await conn.sendMessage(m.chat, {
-                react: { text: '❌', key: m.key }
+                react: {
+                    text: '✖️',
+                    key: m.key
+                }
             })
 
-            m.reply('❌ Error en Shazam Todleys')
+            m.reply(
+                `❌ Error: ${e.message}`
+            )
         }
     }
 }
-
-export default shazam;
