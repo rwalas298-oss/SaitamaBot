@@ -1,3 +1,4 @@
+import { config } from '../config.js'
 import axios from 'axios'
 import fs from 'fs'
 import FormData from 'form-data'
@@ -50,7 +51,7 @@ export default {
 
             form.append(
                 'api_token',
-                '9eb6d988ec1bf3ce2463405dff7a1fdd'
+                'TU_TOKEN_DE_AUDD'
             )
 
             form.append(
@@ -80,13 +81,10 @@ export default {
 
 📌 Título:
 > ${song.title || '-'}
-
 👤 Artista:
 > ${song.artist || '-'}
-
 💿 Álbum:
 > ${song.album || '-'}
-
 📅 Lanzamiento:
 > ${song.release_date || '-'}`
 
