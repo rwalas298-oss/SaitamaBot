@@ -1,5 +1,9 @@
 import { config } from '../config.js'
 import axios from 'axios'
+import ytdlp from 'yt-dlp-exec'
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
 
 const http = axios.create({
     timeout: 15000
@@ -25,6 +29,7 @@ const youtubeVideo = {
         })
 
         try {
+
             let videoUrl = ''
 
             const isUrl =
@@ -38,7 +43,7 @@ const youtubeVideo = {
                 videoUrl = text
 
                 await m.reply(
-                    `*${config.visuals.emoji3}* ✿ Enlace detectado. Enviando video, espera un momento...`
+                    `*${config.visuals.emoji3}* Enlace detectado. Enviando video...`
                 )
 
             } else {
@@ -49,15 +54,9 @@ const youtubeVideo = {
 
                 const list = searchRes?.data || searchRes?.result || []
 
-                if (!list.length) {
-                    return m.reply('No se encontraron resultados.')
-                }
+                if (!list.length) return m.reply('No se encontraron resultados.')
 
                 const firstResult = list[0]
-
-                if (!firstResult?.url || firstResult.duration === '0:00') {
-                    return m.reply('❌ Video no válido.')
-                }
 
                 videoUrl = firstResult.url
 
@@ -86,38 +85,66 @@ _Enviando video, espere un momento..._`
             }
 
             // =========================
-            // 📥 DESCARGA PRO (FIX)
+            // 📥 DESCARGA DELIRIUS
             // =========================
-            const qualities = ['720p', '360p', '1080p']
+            const qualities = ['1080p', '720p', '360p']
 
             let videoData = null
             let selectedQuality = null
 
-            for (const quality of qualities) {
+            for (const q of qualities) {
                 try {
                     const { data } = await http.get(
-                        `https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(videoUrl)}&format=${quality}`
+                        `https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(videoUrl)}&format=${q}`
                     )
 
                     if (data?.data?.download || data?.download) {
                         videoData = data.data || data
-                        selectedQuality = quality
+                        selectedQuality = q
                         break
                     }
-
-                } catch (e) {
-                    console.log(`❌ fallo ${quality}:`, e.message)
-                }
+                } catch {}
             }
 
-            if (!videoData) {
-                return m.reply('❌ No se pudo obtener el video.')
-            }
+            let downloadUrl = videoData?.download || videoData?.url
+            let filePath = null
 
-            const downloadUrl = videoData.download || videoData.url
-
+            // =========================
+            // ⚡ YT-DLP FALLBACK (ULTRA FIX)
+            // =========================
             if (!downloadUrl) {
-                return m.reply('❌ Enlace de descarga inválido.')
+
+                await m.reply('⚙️ Activando yt-dlp ultra motor...')
+
+                filePath = path.join(os.tmpdir(), `${Date.now()}.mp4`)
+
+                await ytdlp(videoUrl, {
+
+                    output: filePath,
+
+                    format: 'bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/best',
+                    mergeOutputFormat: 'mp4',
+
+                    noPlaylist: true,
+                    noCheckCertificates: true,
+
+                    retries: 5,
+                    fragmentRetries: 5,
+
+                    addHeader: {
+                        referer: 'https://www.youtube.com/',
+                        'user-agent':
+                            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari'
+                    },
+
+                    extractorArgs: {
+                        youtube: {
+                            player_client: ['android', 'web']
+                        }
+                    }
+                })
+
+                downloadUrl = filePath
             }
 
             // =========================
@@ -126,47 +153,74 @@ _Enviando video, espere un momento..._`
             let sizeMB = 0
 
             try {
-                const head = await http.head(downloadUrl)
-                const size = Number(head.headers['content-length'] || 0)
-                sizeMB = size / (1024 * 1024)
+                if (downloadUrl.startsWith('http')) {
+                    const head = await http.head(downloadUrl)
+                    const size = Number(head.headers['content-length'] || 0)
+                    sizeMB = size / (1024 * 1024)
+                } else {
+                    const stats = fs.statSync(downloadUrl)
+                    sizeMB = stats.size / (1024 * 1024)
+                }
             } catch {}
 
             const sizeGB = sizeMB / 1024
 
             if (sizeGB >= 3) {
-                return m.reply('❌ El video supera los 3 GB permitidos.')
+                return m.reply('❌ Video demasiado pesado (3GB max).')
             }
 
             const caption =
-`🎬 *${videoData.title || 'Video'}*
-📺 Autor: ${videoData.author || 'Desconocido'}
-👁️ Vistas: ${videoData.views || '0'}
-🎞️ Calidad: ${selectedQuality}
+`🎬 *${videoData?.title || 'Video'}*
+📺 Autor: ${videoData?.author || 'Desconocido'}
+🎞️ Calidad: ${selectedQuality || 'yt-dlp'}
 📦 Tamaño: ${sizeMB.toFixed(2)} MB`
 
             // =========================
-            // 📤 SEND
+            // 📤 SEND (AUTO DOC >100MB)
             // =========================
-            if (sizeMB >= 200) {
+            if (downloadUrl.startsWith('http')) {
 
-                await conn.sendMessage(m.chat, {
-                    document: {
-                        url: downloadUrl
-                    },
-                    mimetype: 'video/mp4',
-                    fileName: `${videoData.title || 'video'}.mp4`,
-                    caption
-                }, { quoted: m })
+                if (sizeMB >= 100) {
+
+                    await conn.sendMessage(m.chat, {
+                        document: { url: downloadUrl },
+                        mimetype: 'video/mp4',
+                        fileName: `${videoData?.title || 'video'}.mp4`,
+                        caption
+                    }, { quoted: m })
+
+                } else {
+
+                    await conn.sendMessage(m.chat, {
+                        video: { url: downloadUrl },
+                        mimetype: 'video/mp4',
+                        caption
+                    }, { quoted: m })
+                }
 
             } else {
 
-                await conn.sendMessage(m.chat, {
-                    video: {
-                        url: downloadUrl
-                    },
-                    mimetype: 'video/mp4',
-                    caption
-                }, { quoted: m })
+                const buffer = fs.readFileSync(downloadUrl)
+
+                if (sizeMB >= 100) {
+
+                    await conn.sendMessage(m.chat, {
+                        document: buffer,
+                        mimetype: 'video/mp4',
+                        fileName: `${videoData?.title || 'video'}.mp4`,
+                        caption
+                    }, { quoted: m })
+
+                } else {
+
+                    await conn.sendMessage(m.chat, {
+                        video: buffer,
+                        mimetype: 'video/mp4',
+                        caption
+                    }, { quoted: m })
+                }
+
+                fs.unlinkSync(downloadUrl)
             }
 
             await conn.sendMessage(m.chat, {
