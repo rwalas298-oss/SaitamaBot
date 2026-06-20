@@ -116,7 +116,7 @@ _Enviando video, espere un momento..._`
 
     await m.reply('⚙️ Activando yt-dlp ultra motor...')
 
-    filePath = path.join(os.tmpdir(), `${Date.now()}.mp4`)
+    filePath = path.join('/tmp', `${Date.now()}.mp4`)
 
     await new Promise((resolve, reject) => {
 
