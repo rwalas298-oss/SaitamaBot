@@ -3,13 +3,9 @@ nixPkgs = ["ffmpeg", "python3", "curl"]
 
 [phases.build]
 cmds = [
-  "pwd",
-  "ls -la",
-  "curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /tmp/yt-dlp",
-  "chmod +x /tmp/yt-dlp",
-  "mv /tmp/yt-dlp /app/yt-dlp || mv /tmp/yt-dlp yt-dlp",
-  "ls -la"
+  "curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o yt-dlp",
+  "chmod +x yt-dlp"
 ]
 
 [start]
-cmd = "node index.js"
+cmd = "npm start"
