@@ -2,7 +2,6 @@ import { config } from '../config.js'
 import axios from 'axios'
 import { exec } from 'child_process'
 import fs from 'fs'
-import fs from 'fs'
 import path from 'path'
 import os from 'os'
 
