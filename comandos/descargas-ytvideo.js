@@ -120,7 +120,8 @@ _Enviando video, espere un momento..._`
 
     await new Promise((resolve, reject) => {
 
-    const cmd = `./yt-dlp ` +
+    const cmd =
+    `yt-dlp ` +
     `-f "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/best" ` +
     `--merge-output-format mp4 ` +
     `--no-playlist ` +
@@ -128,8 +129,8 @@ _Enviando video, espere un momento..._`
     `--fragment-retries 5 ` +
     `-o "${filePath}" ` +
     `"${videoUrl}"`
-
-    exec(cmd, (err, stdout, stderr) => {
+    
+        exec(cmd, (err, stdout, stderr) => {
 
         console.log("yt-dlp stdout:", stdout)
         console.log("yt-dlp stderr:", stderr)
