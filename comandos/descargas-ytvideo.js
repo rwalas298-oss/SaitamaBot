@@ -115,31 +115,30 @@ _Enviando video, espere un momento..._`
             // =========================
             if (!downloadUrl) {
 
-                await m.reply('⚙️ Activando yt-dlp ultra motor...')
+    await m.reply('⚙️ Activando yt-dlp ultra motor...')
 
-filePath = path.join(os.tmpdir(), `${Date.now()}.mp4`)
+    filePath = path.join(os.tmpdir(), `${Date.now()}.mp4`)
 
-await new Promise((resolve, reject) => {
-    const cmd = `yt-dlp \
--f "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/best" \
--o "${filePath}" \
-"${videoUrl}" \
---merge-output-format mp4 \
---no-playlist \
---no-check-certificates \
---retries 5 \
---fragment-retries 5 \
---add-header "referer:https://www.youtube.com/" \
---add-header "user-agent:Mozilla/5.0 Chrome/122 Safari"`
+    await new Promise((resolve, reject) => {
 
-    exec(cmd, (err, stdout, stderr) => {
-        if (err) return reject(stderr || err.message)
-        resolve(true)
+        const cmd =
+            `yt-dlp ` +
+            `-f "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/best" ` +
+            `--merge-output-format mp4 ` +
+            `--no-playlist ` +
+            `--retries 5 ` +
+            `--fragment-retries 5 ` +
+            `-o "${filePath}" ` +
+            `"${videoUrl}"`
+
+        exec(cmd, (err, stdout, stderr) => {
+            if (err) return reject(stderr || err.message)
+            resolve(true)
+        })
     })
-})
 
-                downloadUrl = filePath
-            }
+    downloadUrl = filePath
+                }
 
             // =========================
             // 📦 SIZE CHECK
