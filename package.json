@@ -8,7 +8,7 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "@Dev-FelixOfc/databaselib": "git+https://github.com/Dev-FelixOfc/databaselib.git",
+    "@Dev-FelixOfc/databaselib": "github:Dev-FelixOfc/databaselib",
     "axios": "^1.6.7",
     "better-sqlite3": "^11.0.0",
     "cfonts": "latest",
@@ -29,6 +29,7 @@
     "wa-sticker-formatter": "^4.4.4",
     "wimages-lib": "git+https://github.com/Dev-FelixOfc/WimagesLib.git",
     "yargs": "^18.0.0",
+    "yt-dlp-exec": "^1.0.2",
     "yt-search": "^2.12.1",
     "ytdl-core": "latest"
   }
