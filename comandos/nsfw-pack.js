@@ -1,23 +1,20 @@
-import axios from 'axios'
-
 const pack = {
     name: 'pack',
+    alias: ['girls', 'packgirls'],
+    category: 'nsfw',
     noPrefix: true,
 
     run: async (conn, m) => {
         try {
-            const { data } = await axios.get(
-                'https://api.delirius.store/nsfw/girls'
-            )
 
-            const image = data?.data || data?.url
+            // 📡 API que devuelve imagen directa
+            const image = 'https://api.delirius.store/nsfw/girls'
 
-            if (!image) return m.reply('❌ No se pudo obtener imagen')
-
+            // 📦 Enviar mensaje con card (compatible con Todleys)
             await conn.sendMessage(m.chat, {
                 text: '📦 *Pack Girls*',
 
-                footer: 'Todleys Bot',
+                footer: 'SAITAMABOT packs',
 
                 cards: [
                     {
@@ -27,7 +24,7 @@ const pack = {
 
                         title: '📦 Pack Girls',
 
-                        body: '➡️ Pulsa el botón para otra imagen',
+                        body: '➡️ Presiona el botón para otra imagen aleatoria',
 
                         footer: 'Todleys Bot',
 
@@ -44,9 +41,9 @@ const pack = {
                 ]
             }, { quoted: m })
 
-        } catch (e) {
-            console.log(e)
-            m.reply('❌ Error al obtener pack')
+        } catch (error) {
+            console.log(error)
+            m.reply('❌ Error al obtener el pack')
         }
     }
 }
