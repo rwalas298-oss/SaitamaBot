@@ -1,6 +1,7 @@
 import { config } from '../config.js'
 import axios from 'axios'
-import ytdlp from 'yt-dlp-exec'
+import { exec } from 'child_process'
+import fs from 'fs'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
@@ -116,33 +117,26 @@ _Enviando video, espere un momento..._`
 
                 await m.reply('⚙️ Activando yt-dlp ultra motor...')
 
-                filePath = path.join(os.tmpdir(), `${Date.now()}.mp4`)
+filePath = path.join(os.tmpdir(), `${Date.now()}.mp4`)
 
-                await ytdlp(videoUrl, {
+await new Promise((resolve, reject) => {
+    const cmd = `yt-dlp \
+-f "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/best" \
+-o "${filePath}" \
+"${videoUrl}" \
+--merge-output-format mp4 \
+--no-playlist \
+--no-check-certificates \
+--retries 5 \
+--fragment-retries 5 \
+--add-header "referer:https://www.youtube.com/" \
+--add-header "user-agent:Mozilla/5.0 Chrome/122 Safari"`
 
-                    output: filePath,
-
-                    format: 'bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/best',
-                    mergeOutputFormat: 'mp4',
-
-                    noPlaylist: true,
-                    noCheckCertificates: true,
-
-                    retries: 5,
-                    fragmentRetries: 5,
-
-                    addHeader: {
-                        referer: 'https://www.youtube.com/',
-                        'user-agent':
-                            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari'
-                    },
-
-                    extractorArgs: {
-                        youtube: {
-                            player_client: ['android', 'web']
-                        }
-                    }
-                })
+    exec(cmd, (err, stdout, stderr) => {
+        if (err) return reject(stderr || err.message)
+        resolve(true)
+    })
+})
 
                 downloadUrl = filePath
             }
